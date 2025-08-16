@@ -1,13 +1,15 @@
 //import express from "express";
 import express from "express";
 import mongoose from "mongoose";
-import { UserModel } from "./db.js";
+import { ContentModel, UserModel } from "./db.js";
 import jwt from "jsonwebtoken";
-const JWT_PASSWORD = process.env.JWT_PASSWORD || "change_this_to_a_strong_secret";
+import { JWT_PASSWORD } from "./config.js";
+import { useMiddleware } from "./middlewares.js";
+//const JWT_PASSWORD = process.env.JWT_PASSWORD || "123456";
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-// Signup ----------------------------
+// Signup ----------------------------------------------------------
 app.post("/api/v1/signup", async (req, res) => {
     const username = req.body.username;
     const password = req.body.password;
@@ -44,14 +46,44 @@ app.post("/api/v1/signin", async (req, res) => {
         });
     }
 });
-app.get("/api/v1/content", (req, res) => {
-    res.send("Content retrieved successfully");
+// Content --------------------------------------------------
+app.post("/api/v1/content", useMiddleware, async (req, res) => {
+    const link = req.body.link;
+    const type = req.body.type;
+    await ContentModel.create({
+        link,
+        type,
+        //---------------ts-ignore laga hua tha
+        userId: req.userId,
+        tags: [],
+    });
+    return res.json({
+        message: "Content created successfully"
+    });
 });
-app.delete("/api/v1/content", (req, res) => {
-    res.send("Content deleted successfully");
+// get content ---------------------------------------------
+app.get("/api/v1/content", useMiddleware, async (req, res) => {
+    const userId = req.userId;
+    const content = await ContentModel.find({
+        userId: userId
+    }).populate("userId", ("username"));
+    return res.json(content);
 });
+// del content ---------------------------------------------
+app.delete("/api/v1/content", useMiddleware, async (req, res) => {
+    const contentId = req.body.contentId;
+    await ContentModel.deleteMany({
+        contentId,
+        userId: req.userId,
+    });
+    return res.json({
+        message: " Content deleted successfully"
+    });
+});
+//share --------------------------------------------
 app.post("/api/v1/brain/share", (req, res) => {
 });
+//link -----------------------------------------------------
 app.post("/api/v1/brain/shareLink", (req, res) => {
 });
 app.listen(3000);

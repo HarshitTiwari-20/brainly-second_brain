@@ -2,9 +2,10 @@
 //import express from "express";
 import express from "express";
 import mongoose from "mongoose";
-import { UserModel } from "./db.js";
+import { ContentModel, UserModel } from "./db.js";
 import jwt from "jsonwebtoken";
 import { JWT_PASSWORD } from "./config.js";
+import { useMiddleware } from "./middlewares.js";
 
 //const JWT_PASSWORD = process.env.JWT_PASSWORD || "123456";
 const app = express();
@@ -58,17 +59,42 @@ app.post("/api/v1/signin", async (req, res) => {
 
 // Content --------------------------------------------------
 
-app.get("/api/v1/content", (req, res) => {
-  
+app.post("/api/v1/content", useMiddleware, async(req, res) => {
+
   const link = req.body.link;
   const type = req.body.type;
+  await ContentModel.create({
+    link,
+    type,
+//---------------ts-ignore laga hua tha
+    userId: (req as any).userId,
+    tags: [],
+  });
+  return res.json({
+    message: "Content created successfully"
+  });
 });
 
 
-// del content ---------------------------------------------
-app.delete("/api/v1/content", (req, res) => {
+// get content ---------------------------------------------
+app.get("/api/v1/content", useMiddleware, async (req, res) => {
+  const userId = (req as any).userId;
+  const content = await ContentModel.find({
+    userId: userId
+  }).populate("userId", ("username"));
 
-  res.send("Content deleted successfully");
+  return res.json(content);
+});
+// del content ---------------------------------------------
+app.delete("/api/v1/content", useMiddleware, async (req, res) => {
+  const contentId = req.body.contentId;
+  await ContentModel.deleteMany({
+    contentId,
+    userId: (req as any).userId,
+  });
+  return res.json({ 
+    message: " Content deleted successfully"
+  });
 });
 
 //share --------------------------------------------
