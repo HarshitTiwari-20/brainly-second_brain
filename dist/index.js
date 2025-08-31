@@ -85,39 +85,55 @@ app.delete("/api/v1/content", useMiddleware, async (req, res) => {
 app.post("/api/v1/brain/share", useMiddleware, async (req, res) => {
     const share = req.body.share;
     if (share) {
+        const existingLink = await LinkModel.findOne({
+            userId: req.userId
+        });
+        if (existingLink) {
+            res.json({
+                hash: existingLink.hash,
+            });
+            return;
+        }
+        const hash = random(20);
         await LinkModel.create({
             userId: req.userId,
-            hash: random(10),
+            hash: hash
+        });
+        res.json({
+            hash
         });
     }
     else {
         await LinkModel.deleteOne({
             userId: req.userId
         });
+        res.json({
+            message: "Removed sharable link",
+        });
     }
-    res.json({
-        message: "Updated sharable link"
-    });
 });
 //link -----------------------------------------------------
-app.post("/api/v1/brain/shareLink", async (req, res) => {
+app.get("/api/v1/brain/:shareLink", async (req, res) => {
     const hash = req.params.shareLink;
     const link = await LinkModel.findOne({
         hash
     });
     if (!link) {
         res.status(411).json({
-            message: "Link not found"
+            message: "Link not found incorrent link"
         });
         return;
     }
+    //userid 
     const content = await ContentModel.find({
         userId: link.userId
     });
-    const user = await UserModel.findById(link.userId);
+    const user = await UserModel.findOne({
+        _id: link.userId
+    });
     if (!user) {
         res.status(411).json({
-            message: "User not found"
+            message: "User not found kya yeh ho sakta hai"
         });
         return;
     }
