@@ -7,11 +7,14 @@ import jwt from "jsonwebtoken";
 import { JWT_PASSWORD } from "./config.js";
 import { useMiddleware } from "./middlewares.js";
 import { random } from "./utils.js";
+import cors from "cors";
 
 //const JWT_PASSWORD = process.env.JWT_PASSWORD || "123456";
 const app = express();
 
 app.use(express.json());
+
+app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 // Signup ----------------------------------------------------------
 app.post("/api/v1/signup", async(req, res) => {
@@ -67,6 +70,7 @@ app.post("/api/v1/content", useMiddleware, async(req, res) => {
   await ContentModel.create({
     link,
     type,
+    title: req.body.title,
 //---------------ts-ignore laga hua tha
     userId: (req as any).userId,
     tags: [],
